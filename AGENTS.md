@@ -25,6 +25,17 @@
 *   `skills/`: Agent skill definitions (`skills/lubelog-cli/SKILL.md`) enabling direct tool discovery and invocation by AI agents.
 *   `lubelog/`: Upstream LubeLogger source code clone (retained as local reference, gitignored).
 
+### Agent Discovery & Blank-Context Protocol (Zero Source-Code Reading)
+
+Incoming agents in a fresh context MUST NOT scan source code. Use the CLI commands via `skills/lubelog-cli/SKILL.md`:
+
+| User Goal | Autonomous Agent Action | Example Command |
+| :--- | :--- | :--- |
+| **Check server & identity** | Verify connection | `lubelog status --json` |
+| **Find vehicle ID** | List vehicles by plate / name | `lubelog vehicle list --json` |
+| **Inspect vehicle summary** | Get odometer, reminder & costs | `lubelog vehicle get <id> --json` |
+| **Fetch service records** | Get maintenance history / last N records | `lubelog service list <id> --limit <n> --json` |
+
 ---
 
 ## 2. Universal Architectural Principles

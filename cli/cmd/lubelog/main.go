@@ -23,10 +23,11 @@ USAGE:
   lubelog [flags] <command> [arguments...]
 
 COMMANDS:
-  status                Check LubeLogger server health and authenticated identity
-  vehicle list          List all accessible vehicles (alias: vehicles)
-  vehicle get <id>      Get detailed info and aggregates for a vehicle (alias: vehicle <id>)
-  version               Display CLI version
+  status                     Check LubeLogger server health and authenticated identity
+  vehicle list               List all accessible vehicles (alias: vehicles)
+  vehicle get <id>           Get detailed info and aggregates for a vehicle (alias: vehicle <id>)
+  service list <vehicleId>   List service/maintenance records for a vehicle (alias: service <id>)
+  version                    Display CLI version
 
 GLOBAL FLAGS:
   --url <string>        Base URL of LubeLogger (default: $LUBELOGGER_URL or http://localhost:5000)
@@ -34,6 +35,7 @@ GLOBAL FLAGS:
   --username <string>   Username for Basic Auth fallback (default: $LUBELOGGER_USERNAME)
   --password <string>   Password for Basic Auth fallback (default: $LUBELOGGER_PASSWORD)
   --timeout <string>    Request timeout duration (default: $LUBELOGGER_TIMEOUT or 10s)
+  --limit <int>         Limit number of records returned (e.g. --limit 3)
   --json                Output response in pure JSON format (default: non-TTY)
   -h, --help            Show this help message
 
@@ -49,6 +51,7 @@ EXAMPLES:
   lubelog status --json
   lubelog vehicle list --json
   lubelog vehicle get 1 --json
+  lubelog service list 1 --limit 3 --json
   lubelog --url https://lubelogger.burakberk.dev --api-key <TOKEN> vehicle list`)
 }
 
@@ -59,6 +62,7 @@ func parseArgs(args []string) (flags []string, positional []string) {
 		"--username": true, "-username": true,
 		"--password": true, "-password": true,
 		"--timeout": true, "-timeout": true,
+		"--limit": true, "-limit": true,
 	}
 
 	for i := 0; i < len(args); i++ {
@@ -78,6 +82,7 @@ func parseArgs(args []string) (flags []string, positional []string) {
 
 func main() {
 	var flagURL, flagAPIKey, flagUser, flagPass, flagTimeout string
+	var flagLimit int
 	var flagJSON, flagHelp bool
 
 	flagArgs, posArgs := parseArgs(os.Args[1:])
@@ -90,6 +95,7 @@ func main() {
 	fs.StringVar(&flagUser, "username", "", "Username")
 	fs.StringVar(&flagPass, "password", "", "Password")
 	fs.StringVar(&flagTimeout, "timeout", "", "Request timeout")
+	fs.IntVar(&flagLimit, "limit", 0, "Limit number of records returned")
 	fs.BoolVar(&flagJSON, "json", false, "Force JSON output")
 	fs.BoolVar(&flagHelp, "help", false, "Show help")
 	fs.BoolVar(&flagHelp, "h", false, "Show help")
@@ -150,6 +156,23 @@ func main() {
 			}
 			output.ExitWithError("UNKNOWN_SUBCOMMAND", fmt.Sprintf("unknown vehicle subcommand '%s'", subCmd), 0, output.ExitUsageError, cfg.JSONOutput)
 		}
+
+	case "services", "service":
+		if len(args) < 2 {
+			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'service list <vehicleId>' (e.g. 'lubelog service list 1 --limit 3')", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		targetArg := args[1]
+		if strings.ToLower(targetArg) == "list" || strings.ToLower(targetArg) == "ls" {
+			if len(args) < 3 {
+				output.ExitWithError("MISSING_ARGUMENT", "missing required vehicle ID: 'lubelog service list <vehicleId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			targetArg = args[2]
+		}
+		vehicleID, err := strconv.Atoi(targetArg)
+		if err != nil || vehicleID <= 0 {
+			output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		commands.RunServiceList(ctx, cfg, apiClient, vehicleID, flagLimit)
 
 	case "help":
 		printUsage()

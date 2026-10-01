@@ -25,6 +25,18 @@ type NextReminder struct {
 	Metric      string `json:"metric,omitempty"`
 }
 
+// ServiceRecord represents a single service/maintenance event for a vehicle.
+type ServiceRecord struct {
+	ID          interface{} `json:"id"`
+	VehicleID   interface{} `json:"vehicleId"`
+	Date        string      `json:"date"`
+	Odometer    interface{} `json:"odometer"`
+	Description string      `json:"description"`
+	Cost        interface{} `json:"cost"`
+	Notes       *string     `json:"notes,omitempty"`
+	Tags        interface{} `json:"tags,omitempty"`
+}
+
 // VehicleInfo represents aggregated statistics and state for a vehicle.
 type VehicleInfo struct {
 	VehicleData             Vehicle       `json:"vehicleData"`

@@ -114,3 +114,31 @@ func FormatVehicleInfo(info *client.VehicleInfo, asJSON bool) error {
 
 	return nil
 }
+
+// FormatServiceRecords prints a list of service records as JSON or a table.
+func FormatServiceRecords(records []client.ServiceRecord, asJSON bool) error {
+	if asJSON {
+		return PrintJSON(records)
+	}
+
+	if len(records) == 0 {
+		fmt.Println("No service records found.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "ID\tDATE\tODOMETER\tCOST\tDESCRIPTION\tNOTES")
+	for _, r := range records {
+		notes := "-"
+		if r.Notes != nil && *r.Notes != "" {
+			cleanNote := strings.ReplaceAll(*r.Notes, "\n", " ")
+			if len(cleanNote) > 40 {
+				cleanNote = cleanNote[:37] + "..."
+			}
+			notes = cleanNote
+		}
+		fmt.Fprintf(w, "%v\t%s\t%v\t%v\t%s\t%s\n",
+			r.ID, r.Date, r.Odometer, r.Cost, r.Description, notes)
+	}
+	return w.Flush()
+}

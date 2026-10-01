@@ -58,8 +58,12 @@ export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 # Get details & aggregates for a vehicle
 ./cli/bin/lubelog vehicle get 1 --json
 
+# List service/maintenance records (limit to last 3)
+./cli/bin/lubelog service list 1 --limit 3 --json
+
 # Human-readable table output
 ./cli/bin/lubelog vehicle list
+./cli/bin/lubelog service list 1 --limit 3
 ```
 
 ---

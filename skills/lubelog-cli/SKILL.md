@@ -118,6 +118,65 @@ lubelog vehicle get 1 --json
 
 ---
 
+### 4. `lubelog service list <vehicleId> [--limit <n>]`
+Retrieves chronological service and maintenance records for a vehicle (sorted newest first). Use `--limit <n>` to retrieve only the last N records.
+
+```bash
+lubelog service list 3 --limit 3 --json
+```
+
+**JSON Output Example:**
+```json
+[
+  {
+    "id": 18,
+    "vehicleId": 3,
+    "date": "2026-09-19",
+    "odometer": 69779,
+    "description": "Akü değişimi",
+    "cost": 4000,
+    "notes": "Üstündeki orijinal akü, Tudor 60A akü ile değişti.",
+    "tags": ""
+  },
+  {
+    "id": 17,
+    "vehicleId": 3,
+    "date": "2026-09-01",
+    "odometer": 69528,
+    "description": "70 bin ağır bakımı",
+    "cost": 16000,
+    "notes": "- Triger kayışı (orjinal)\n- V kayışı (orijinal)\n- Devirdaim (orijinal)\n- Termostat\n- Gergi (Orijinal)\n- Antifriz\n- Saf su",
+    "tags": ""
+  },
+  {
+    "id": 14,
+    "vehicleId": 3,
+    "date": "2026-04-22",
+    "odometer": 64500,
+    "description": "Periyodik bakım: Yağ, hava filtre, yağ filtre, polen filtre",
+    "cost": 5000,
+    "tags": ""
+  }
+]
+```
+
+---
+
+## Autonomous Agent Execution Protocols (Blank-Context Guide)
+
+When an AI Agent is asked a question regarding vehicles or maintenance, follow this exact 3-step protocol without inspecting the codebase:
+
+1. **Step 1: Discover Vehicles & Resolve ID**
+   * Run `lubelog vehicle list --json`
+   * Match the user's vehicle name, plate, or model (e.g. "Egea" -> `id: 3`).
+2. **Step 2: Fetch Target Information**
+   * If the user asks for vehicle overview/mileage: `lubelog vehicle get <id> --json`
+   * If the user asks for service records (e.g. "son 3 servis kaydı"): `lubelog service list <id> --limit 3 --json`
+3. **Step 3: Parse & Present**
+   * Parse the pure JSON array. Format the dates, costs, odometers, and notes cleanly for the user.
+
+---
+
 ## Standardized Exit Codes
 
 When invoking `lubelog`, check the process exit code for deterministic error handling:

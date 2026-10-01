@@ -187,3 +187,17 @@ func (c *Client) GetVehicleInfo(ctx context.Context, vehicleID int) (*VehicleInf
 	}
 	return &infos[0], nil
 }
+
+// GetServiceRecords calls /api/vehicle/servicerecords?vehicleId={id}.
+func (c *Client) GetServiceRecords(ctx context.Context, vehicleID int) ([]ServiceRecord, error) {
+	path := fmt.Sprintf("/api/vehicle/servicerecords?vehicleId=%d", vehicleID)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	var records []ServiceRecord
+	if err := c.doRequest(req, &records); err != nil {
+		return nil, err
+	}
+	return records, nil
+}
