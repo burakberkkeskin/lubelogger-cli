@@ -44,6 +44,9 @@ func NewClient(baseURL string, apiKey string, username string, password string, 
 		Password: password,
 		HTTPClient: &http.Client{
 			Timeout: timeout,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 	}
 }
@@ -79,6 +82,17 @@ func (c *Client) doRequest(req *http.Request, target interface{}) error {
 		}
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusFound || resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusTemporaryRedirect {
+		loc := resp.Header.Get("Location")
+		if strings.Contains(strings.ToLower(loc), "login") {
+			return &APIError{
+				StatusCode: http.StatusUnauthorized,
+				Code:       "AUTH_ERROR",
+				Message:    "authentication required (server redirected to login page; please supply a valid API key or credentials)",
+			}
+		}
+	}
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return &APIError{
