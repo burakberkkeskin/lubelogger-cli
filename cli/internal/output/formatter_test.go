@@ -94,3 +94,66 @@ func TestFormatVehicleInfo_JSON(t *testing.T) {
 		t.Errorf("expected JSON output containing Model Y, got: %s", out)
 	}
 }
+
+func TestFormatMutationResult(t *testing.T) {
+	res := &client.MutationResult{
+		Success:     true,
+		RecordType:  "service",
+		RecordID:    int64(19),
+		VehicleID:   3,
+		Date:        "2026-10-01",
+		Odometer:    "70500",
+		Cost:        "4500",
+		Description: "Periyodik Bakım",
+		Files: []client.UploadedFile{
+			{Name: "invoice.pdf", Location: "/documents/abc.pdf"},
+		},
+	}
+
+	t.Run("JSON output", func(t *testing.T) {
+		out := captureStdout(func() {
+			_ = FormatMutationResult(res, true)
+		})
+		if !strings.Contains(out, `"recordType": "service"`) || !strings.Contains(out, `"recordId": 19`) {
+			t.Errorf("unexpected json: %s", out)
+		}
+	})
+
+	t.Run("Text output", func(t *testing.T) {
+		out := captureStdout(func() {
+			_ = FormatMutationResult(res, false)
+		})
+		if !strings.Contains(out, "Created service record #19 for vehicle #3") {
+			t.Errorf("unexpected text output: %s", out)
+		}
+		if !strings.Contains(out, "70500") || !strings.Contains(out, "invoice.pdf") {
+			t.Errorf("missing details in text output: %s", out)
+		}
+	})
+}
+
+func TestFormatUploadedFiles(t *testing.T) {
+	files := []client.UploadedFile{
+		{Name: "doc1.pdf", Location: "/documents/123.pdf"},
+		{Name: "doc2.jpg", Location: "/documents/456.jpg"},
+	}
+
+	t.Run("JSON output", func(t *testing.T) {
+		out := captureStdout(func() {
+			_ = FormatUploadedFiles(files, true)
+		})
+		if !strings.Contains(out, "/documents/123.pdf") {
+			t.Errorf("unexpected json: %s", out)
+		}
+	})
+
+	t.Run("Text output", func(t *testing.T) {
+		out := captureStdout(func() {
+			_ = FormatUploadedFiles(files, false)
+		})
+		if !strings.Contains(out, "Uploaded 2 file(s)") || !strings.Contains(out, "doc1.pdf -> /documents/123.pdf") {
+			t.Errorf("unexpected text output: %s", out)
+		}
+	})
+}
+

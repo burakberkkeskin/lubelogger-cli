@@ -217,7 +217,90 @@ lubelog fuel list 3 --limit 5 --json
 
 ---
 
-### 7. Downloading Attachments & Documents
+### 7. Creating Records & Uploading Documents
+
+AI agents can record maintenance, fuel fill-ups, and notes, including attaching local invoices/photos. Local files are pre-flight validated and automatically uploaded to LubeLogger's document storage before linking to the record.
+
+#### A. Add Service Record
+```bash
+lubelog service add <vehicleId> \
+  --desc <string> \
+  --odometer <int> \
+  --cost <number> \
+  [--date YYYY-MM-DD] \
+  [--notes <string>] \
+  [--tags <string>] \
+  [--file <path>...] \
+  --json
+```
+
+**JSON Output Example:**
+```json
+{
+  "success": true,
+  "recordType": "service",
+  "recordId": 19,
+  "vehicleId": 3,
+  "date": "2026-10-01",
+  "odometer": "70500",
+  "cost": "4500",
+  "description": "Periyodik Bakım",
+  "files": [
+    {
+      "name": "fatura.pdf",
+      "location": "/documents/3f2d9885-a361-4216-bdba-686bb814ac6b.pdf"
+    }
+  ]
+}
+```
+
+#### B. Add Fuel / Gas Record
+```bash
+lubelog fuel add <vehicleId> \
+  --odometer <int> \
+  --liters <number> \
+  --cost <number> \
+  [--date YYYY-MM-DD] \
+  [--full] \
+  [--partial] \
+  [--missed] \
+  [--notes <string>] \
+  [--tags <string>] \
+  [--file <path>...] \
+  --json
+```
+* Note: `--full` is default (`true`). Use `--partial` or `--not-full` for non-complete fill-ups.
+
+#### C. Add Note Record
+```bash
+lubelog note add <vehicleId> \
+  --title <string> \
+  --text <string> \
+  [--pinned] \
+  [--tags <string>] \
+  [--file <path>...] \
+  --json
+```
+
+#### D. Standalone File Upload
+Upload files directly to LubeLogger's document storage:
+```bash
+lubelog file upload <path>... --json
+```
+
+**JSON Output Example:**
+```json
+[
+  {
+    "name": "fatura.pdf",
+    "location": "/documents/3f2d9885-a361-4216-bdba-686bb814ac6b.pdf"
+  }
+]
+```
+
+---
+
+### 8. Downloading Attachments & Documents
 Download attached files (invoices, receipts, inspection PDFs, photos) from service records, fuel entries, notes, or directly by file path:
 
 ```bash
@@ -249,7 +332,7 @@ lubelog file download /documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf --outp
 
 ---
 
-### 8. `lubelog version` (or `-v`, `--version`)
+### 9. `lubelog version` (or `-v`, `--version`)
 Displays CLI version, build timestamp, commit SHA, and Go/OS/Arch metadata.
 
 ```bash
@@ -272,23 +355,29 @@ lubelog version --json
 
 ## Autonomous Agent Execution Protocols (Blank-Context Guide)
 
-When an AI Agent is asked a question regarding vehicles or maintenance, follow this exact 3-step protocol without inspecting the codebase:
+When an AI Agent is asked to query or record vehicle maintenance, follow this exact protocol without inspecting the codebase:
 
 1. **Step 1: Discover Vehicles & Resolve ID**
    * Run `lubelog vehicle list --json`
    * Match the user's vehicle name, plate, or model (e.g. "Egea" -> `id: 3`).
-2. **Step 2: Fetch Target Information & Download Documents**
+2. **Step 2: Fetch Target Information, Download Documents, or Add Records**
    * If the user asks for vehicle overview/mileage: `lubelog vehicle get <id> --json`
    * If the user asks for service records: `lubelog service list <id> [--limit <n>] --json`
    * If the user asks for fuel/gas history: `lubelog fuel list <id> [--limit <n>] --json`
    * If the user asks for notes, documents, or expert reports: `lubelog note list <id> --json`
+   * If the user asks to record maintenance/service:
+     `lubelog service add <id> --desc "..." --odometer <n> --cost <n> [--file <path>...] --json`
+   * If the user asks to record fuel:
+     `lubelog fuel add <id> --odometer <n> --liters <n> --cost <n> [--file <path>...] --json`
+   * If the user asks to record a note:
+     `lubelog note add <id> --title "..." --text "..." [--file <path>...] --json`
    * If the user asks to download an invoice, report, or file:
      - From service record: `lubelog service download <id> <serviceId> [--output <dir>] --json`
      - From fuel record: `lubelog fuel download <id> <fuelId> [--output <dir>] --json`
      - From note: `lubelog note download <id> <noteId> [--output <dir>] --json`
      - Direct by path/URL: `lubelog file download <location> [--output <path>] --json`
 3. **Step 3: Parse & Present**
-   * Parse the pure JSON array. Format the dates, costs, odometers, notes, and file names cleanly for the user.
+   * Parse the pure JSON array or mutation object. Format the dates, costs, odometers, notes, and file names cleanly for the user.
 
 ---
 

@@ -236,3 +236,58 @@ func formatFileSize(b int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
 }
 
+// FormatMutationResult prints the mutation confirmation either as JSON or formatted text.
+func FormatMutationResult(res *client.MutationResult, asJSON bool) error {
+	if asJSON {
+		return PrintJSON(res)
+	}
+
+	recIDStr := "?"
+	if res.RecordID != nil {
+		recIDStr = fmt.Sprintf("#%v", res.RecordID)
+	}
+
+	fmt.Printf("✓ Created %s record %s for vehicle #%d\n", res.RecordType, recIDStr, res.VehicleID)
+	if res.Date != "" {
+		fmt.Printf("  Date:        %s\n", res.Date)
+	}
+	if res.Odometer != nil && fmt.Sprintf("%v", res.Odometer) != "" {
+		fmt.Printf("  Odometer:    %v\n", res.Odometer)
+	}
+	if res.FuelConsumed != nil && fmt.Sprintf("%v", res.FuelConsumed) != "" {
+		fmt.Printf("  Consumed:    %v\n", res.FuelConsumed)
+	}
+	if res.Cost != nil && fmt.Sprintf("%v", res.Cost) != "" {
+		fmt.Printf("  Cost:        %v\n", res.Cost)
+	}
+	if res.Description != "" {
+		fmt.Printf("  Description: %s\n", res.Description)
+	}
+	if len(res.Files) > 0 {
+		var names []string
+		for _, f := range res.Files {
+			names = append(names, f.Name)
+		}
+		fmt.Printf("  Files:       %d attached (%s)\n", len(res.Files), strings.Join(names, ", "))
+	}
+	return nil
+}
+
+// FormatUploadedFiles prints uploaded documents either as JSON or formatted text.
+func FormatUploadedFiles(files []client.UploadedFile, asJSON bool) error {
+	if asJSON {
+		return PrintJSON(files)
+	}
+
+	if len(files) == 0 {
+		fmt.Println("No files uploaded.")
+		return nil
+	}
+
+	fmt.Printf("✓ Uploaded %d file(s):\n", len(files))
+	for _, f := range files {
+		fmt.Printf("  • %s -> %s\n", f.Name, f.Location)
+	}
+	return nil
+}
+

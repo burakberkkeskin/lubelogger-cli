@@ -36,6 +36,18 @@ func TestParseArgs(t *testing.T) {
 			wantFlags:   []string{"--url=http://localhost:5000"},
 			wantPosArgs: []string{"status"},
 		},
+		{
+			name:        "mutation flags with multiple files",
+			input:       []string{"service", "add", "1", "--desc", "Oil Change", "--odometer", "50000", "--cost", "1200", "--file", "receipt.pdf", "--file", "photo.jpg", "--json"},
+			wantFlags:   []string{"--desc", "Oil Change", "--odometer", "50000", "--cost", "1200", "--file", "receipt.pdf", "--file", "photo.jpg", "--json"},
+			wantPosArgs: []string{"service", "add", "1"},
+		},
+		{
+			name:        "fuel add with flags and boolean",
+			input:       []string{"fuel", "add", "2", "--odometer", "60000", "--liters", "45", "--cost", "2000", "--full"},
+			wantFlags:   []string{"--odometer", "60000", "--liters", "45", "--cost", "2000", "--full"},
+			wantPosArgs: []string{"fuel", "add", "2"},
+		},
 	}
 
 	for _, tt := range tests {

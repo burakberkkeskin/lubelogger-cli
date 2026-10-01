@@ -77,11 +77,17 @@ export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 # List service/maintenance records (limit to last 3)
 ./cli/bin/lubelog service list 1 --limit 3 --json
 
+# Add a service record (with optional attachment)
+./cli/bin/lubelog service add 1 --desc "Oil Change" --odometer 55000 --cost 1200 --file ./receipt.pdf --json
+
 # Download attachments for a service record
 ./cli/bin/lubelog service download 1 14 --output ./downloads
 
 # List fuel / gas entries
 ./cli/bin/lubelog fuel list 1 --limit 5 --json
+
+# Add a fuel / gas record
+./cli/bin/lubelog fuel add 1 --odometer 55300 --liters 42.5 --cost 1850 --full --json
 
 # Download attachments for a fuel entry
 ./cli/bin/lubelog fuel download 1 40 --output ./downloads
@@ -89,8 +95,14 @@ export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 # List notes, expert reports and attachments
 ./cli/bin/lubelog note list 1 --json
 
+# Add a note (with optional attachment)
+./cli/bin/lubelog note add 1 --title "Tire Rotation" --text "Done at front shop" --pinned --json
+
 # Download attachments for a note
 ./cli/bin/lubelog note download 1 1 --output ./downloads
+
+# Direct file upload to server
+./cli/bin/lubelog file upload ./invoice.pdf ./photo.jpg --json
 
 # Direct file download by server path/URL
 ./cli/bin/lubelog file download /documents/abc-123.pdf --output ./report.pdf

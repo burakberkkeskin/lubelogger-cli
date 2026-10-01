@@ -1,12 +1,16 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -112,6 +116,14 @@ func (c *Client) doRequest(req *http.Request, target interface{}) error {
 
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
+		var opResp OperationResponse
+		if err := json.Unmarshal(bodyBytes, &opResp); err == nil && opResp.Message != "" {
+			return &APIError{
+				StatusCode: resp.StatusCode,
+				Code:       "API_ERROR",
+				Message:    opResp.Message,
+			}
+		}
 		return &APIError{
 			StatusCode: resp.StatusCode,
 			Code:       "SERVER_ERROR",
@@ -309,5 +321,191 @@ func (c *Client) DownloadFile(ctx context.Context, location string) (io.ReadClos
 	contentType := resp.Header.Get("Content-Type")
 	contentLength := resp.ContentLength
 	return resp.Body, contentType, contentLength, nil
+}
+
+// UploadDocuments streams local files to POST /api/documents/upload using multipart/form-data.
+// Returns the uploaded file descriptors returned by the server.
+func (c *Client) UploadDocuments(ctx context.Context, filePaths []string) ([]UploadedFile, error) {
+	if len(filePaths) == 0 {
+		return nil, nil
+	}
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	for _, fp := range filePaths {
+		file, err := os.Open(fp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open file '%s': %w", fp, err)
+		}
+
+		stat, err := file.Stat()
+		if err != nil {
+			file.Close()
+			return nil, fmt.Errorf("failed to stat file '%s': %w", fp, err)
+		}
+		if stat.IsDir() {
+			file.Close()
+			return nil, fmt.Errorf("path '%s' is a directory, not a file", fp)
+		}
+
+		part, err := writer.CreateFormFile("documents", filepath.Base(fp))
+		if err != nil {
+			file.Close()
+			return nil, fmt.Errorf("failed to create form file for '%s': %w", fp, err)
+		}
+		if _, err := io.Copy(part, file); err != nil {
+			file.Close()
+			return nil, fmt.Errorf("failed to copy file content for '%s': %w", fp, err)
+		}
+		file.Close()
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	req, err := c.newRequest(ctx, http.MethodPost, "/api/documents/upload", body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	var uploaded []UploadedFile
+	if err := c.doRequest(req, &uploaded); err != nil {
+		return nil, err
+	}
+
+	return uploaded, nil
+}
+
+// AddServiceRecord calls POST /api/vehicle/servicerecords/add?vehicleId={id}.
+func (c *Client) AddServiceRecord(ctx context.Context, vehicleID int, input ServiceRecordInput) (*MutationResult, error) {
+	if vehicleID <= 0 {
+		return nil, fmt.Errorf("invalid vehicle ID: %d", vehicleID)
+	}
+
+	payload, err := json.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal service record payload: %w", err)
+	}
+
+	path := fmt.Sprintf("/api/vehicle/servicerecords/add?vehicleId=%d", vehicleID)
+	req, err := c.newRequest(ctx, http.MethodPost, path, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	var resp OperationResponse
+	if err := c.doRequest(req, &resp); err != nil {
+		return nil, err
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("server rejected service record: %s", resp.Message)
+	}
+
+	return &MutationResult{
+		Success:     true,
+		RecordType:  "service",
+		RecordID:    parseRecordID(resp.AdditionalData),
+		VehicleID:   vehicleID,
+		Date:        input.Date,
+		Odometer:    input.Odometer,
+		Cost:        input.Cost,
+		Description: input.Description,
+		Files:       input.Files,
+	}, nil
+}
+
+// AddGasRecord calls POST /api/vehicle/gasrecords/add?vehicleId={id}.
+func (c *Client) AddGasRecord(ctx context.Context, vehicleID int, input GasRecordInput) (*MutationResult, error) {
+	if vehicleID <= 0 {
+		return nil, fmt.Errorf("invalid vehicle ID: %d", vehicleID)
+	}
+
+	payload, err := json.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal gas record payload: %w", err)
+	}
+
+	path := fmt.Sprintf("/api/vehicle/gasrecords/add?vehicleId=%d", vehicleID)
+	req, err := c.newRequest(ctx, http.MethodPost, path, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	var resp OperationResponse
+	if err := c.doRequest(req, &resp); err != nil {
+		return nil, err
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("server rejected gas record: %s", resp.Message)
+	}
+
+	return &MutationResult{
+		Success:      true,
+		RecordType:   "fuel",
+		RecordID:     parseRecordID(resp.AdditionalData),
+		VehicleID:    vehicleID,
+		Date:         input.Date,
+		Odometer:     input.Odometer,
+		Cost:         input.Cost,
+		FuelConsumed: input.FuelConsumed,
+		Files:        input.Files,
+	}, nil
+}
+
+// AddNoteRecord calls POST /api/vehicle/notes/add?vehicleId={id}.
+func (c *Client) AddNoteRecord(ctx context.Context, vehicleID int, input NoteRecordInput) (*MutationResult, error) {
+	if vehicleID <= 0 {
+		return nil, fmt.Errorf("invalid vehicle ID: %d", vehicleID)
+	}
+
+	payload, err := json.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal note record payload: %w", err)
+	}
+
+	path := fmt.Sprintf("/api/vehicle/notes/add?vehicleId=%d", vehicleID)
+	req, err := c.newRequest(ctx, http.MethodPost, path, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	var resp OperationResponse
+	if err := c.doRequest(req, &resp); err != nil {
+		return nil, err
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("server rejected note record: %s", resp.Message)
+	}
+
+	return &MutationResult{
+		Success:     true,
+		RecordType:  "note",
+		RecordID:    parseRecordID(resp.AdditionalData),
+		VehicleID:   vehicleID,
+		Description: input.Description,
+		Files:       input.Files,
+	}, nil
+}
+
+func parseRecordID(data map[string]interface{}) interface{} {
+	if data == nil {
+		return nil
+	}
+	if val, ok := data["recordId"]; ok {
+		if f, ok := val.(float64); ok {
+			return int64(f)
+		}
+		return val
+	}
+	return nil
 }
 

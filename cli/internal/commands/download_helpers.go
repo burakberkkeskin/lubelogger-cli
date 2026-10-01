@@ -99,3 +99,20 @@ func DownloadRecordFiles(ctx context.Context, apiClient *client.Client, files []
 
 	return downloaded, nil
 }
+
+// ValidateLocalFiles checks that all provided file paths exist, are accessible, and are regular files.
+func ValidateLocalFiles(filePaths []string) error {
+	for _, fp := range filePaths {
+		stat, err := os.Stat(fp)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("file not found: '%s'", fp)
+			}
+			return fmt.Errorf("cannot access file '%s': %w", fp, err)
+		}
+		if stat.IsDir() {
+			return fmt.Errorf("path '%s' is a directory, not a regular file", fp)
+		}
+	}
+	return nil
+}

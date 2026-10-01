@@ -137,3 +137,58 @@ type StatusResponse struct {
 	Authenticated bool             `json:"authenticated"`
 	User          *UserExportModel `json:"user,omitempty"`
 }
+
+// ServiceRecordInput represents the payload to create a new service record.
+type ServiceRecordInput struct {
+	Date        string         `json:"date"`
+	Odometer    string         `json:"odometer"`
+	Description string         `json:"description"`
+	Cost        string         `json:"cost"`
+	Notes       string         `json:"notes,omitempty"`
+	Tags        string         `json:"tags,omitempty"`
+	Files       []UploadedFile `json:"files,omitempty"`
+}
+
+// GasRecordInput represents the payload to create a new fuel/gas record.
+type GasRecordInput struct {
+	Date         string         `json:"date"`
+	Odometer     string         `json:"odometer"`
+	FuelConsumed string         `json:"fuelConsumed"`
+	Cost         string         `json:"cost"`
+	IsFillToFull string         `json:"isFillToFull"`
+	MissedFuelUp string         `json:"missedFuelUp"`
+	Notes        string         `json:"notes,omitempty"`
+	Tags         string         `json:"tags,omitempty"`
+	Files        []UploadedFile `json:"files,omitempty"`
+}
+
+// NoteRecordInput represents the payload to create a new note record.
+type NoteRecordInput struct {
+	Description string         `json:"description"`
+	NoteText    string         `json:"noteText"`
+	Pinned      string         `json:"pinned,omitempty"`
+	Tags        string         `json:"tags,omitempty"`
+	Files       []UploadedFile `json:"files,omitempty"`
+}
+
+// OperationResponse represents the generic response envelope from LubeLogger mutation APIs.
+type OperationResponse struct {
+	Success        bool                   `json:"success"`
+	Message        string                 `json:"message"`
+	AdditionalData map[string]interface{} `json:"additionalData,omitempty"`
+}
+
+// MutationResult is the standardized CLI output returned when a record is created.
+type MutationResult struct {
+	Success      bool           `json:"success"`
+	RecordType   string         `json:"recordType"`
+	RecordID     interface{}    `json:"recordId"`
+	VehicleID    int            `json:"vehicleId"`
+	Date         string         `json:"date,omitempty"`
+	Odometer     interface{}    `json:"odometer,omitempty"`
+	Cost         interface{}    `json:"cost,omitempty"`
+	Description  string         `json:"description,omitempty"`
+	FuelConsumed interface{}    `json:"fuelConsumed,omitempty"`
+	Files        []UploadedFile `json:"files,omitempty"`
+}
+

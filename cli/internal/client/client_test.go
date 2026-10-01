@@ -2,9 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -227,4 +230,178 @@ func TestClient_DownloadFile(t *testing.T) {
 		t.Errorf("expected NOT_FOUND APIError, got %v", err)
 	}
 }
+
+func TestClient_UploadDocuments(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/documents/upload" {
+			t.Errorf("expected path /api/documents/upload, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("expected method POST, got %s", r.Method)
+		}
+
+		err := r.ParseMultipartForm(10 << 20)
+		if err != nil {
+			t.Fatalf("failed to parse multipart form: %v", err)
+		}
+		files := r.MultipartForm.File["documents"]
+		if len(files) != 1 {
+			t.Fatalf("expected 1 uploaded file under 'documents', got %d", len(files))
+		}
+		if files[0].Filename != "test-receipt.pdf" {
+			t.Errorf("expected filename test-receipt.pdf, got %s", files[0].Filename)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[{"name": "test-receipt.pdf", "location": "/documents/uuid-1234.pdf", "isPending": false}]`))
+	}))
+	defer ts.Close()
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "test-receipt.pdf")
+	if err := os.WriteFile(filePath, []byte("dummy file content"), 0644); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	c := NewClient(ts.URL, "test-key", "", "", 2*time.Second)
+	res, err := c.UploadDocuments(context.Background(), []string{filePath})
+	if err != nil {
+		t.Fatalf("unexpected error uploading documents: %v", err)
+	}
+
+	if len(res) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(res))
+	}
+	if res[0].Name != "test-receipt.pdf" || res[0].Location != "/documents/uuid-1234.pdf" {
+		t.Errorf("unexpected file descriptor: %+v", res[0])
+	}
+}
+
+func TestClient_AddServiceRecord(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/vehicle/servicerecords/add" {
+			t.Errorf("expected path /api/vehicle/servicerecords/add, got %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("vehicleId") != "3" {
+			t.Errorf("expected vehicleId=3, got %s", r.URL.Query().Get("vehicleId"))
+		}
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
+		}
+
+		var payload ServiceRecordInput
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode json body: %v", err)
+		}
+		if payload.Description != "Oil Change" || payload.Odometer != "50000" {
+			t.Errorf("unexpected payload content: %+v", payload)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success": true, "message": "Service Record Added", "additionalData": {"recordId": 19}}`))
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "test-key", "", "", 2*time.Second)
+	res, err := c.AddServiceRecord(context.Background(), 3, ServiceRecordInput{
+		Date:        "2026-10-01",
+		Odometer:    "50000",
+		Description: "Oil Change",
+		Cost:        "1500",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error adding service record: %v", err)
+	}
+
+	if !res.Success {
+		t.Errorf("expected success true, got false")
+	}
+	if fmt.Sprintf("%v", res.RecordID) != "19" {
+		t.Errorf("expected RecordID 19, got %v", res.RecordID)
+	}
+	if res.VehicleID != 3 {
+		t.Errorf("expected VehicleID 3, got %d", res.VehicleID)
+	}
+}
+
+func TestClient_AddGasRecord(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/vehicle/gasrecords/add" {
+			t.Errorf("expected path /api/vehicle/gasrecords/add, got %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("vehicleId") != "2" {
+			t.Errorf("expected vehicleId=2, got %s", r.URL.Query().Get("vehicleId"))
+		}
+
+		var payload GasRecordInput
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode json body: %v", err)
+		}
+		if payload.FuelConsumed != "45.5" || payload.IsFillToFull != "true" || payload.MissedFuelUp != "false" {
+			t.Errorf("unexpected payload: %+v", payload)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success": true, "message": "Gas Record Added", "additionalData": {"recordId": 42}}`))
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "test-key", "", "", 2*time.Second)
+	res, err := c.AddGasRecord(context.Background(), 2, GasRecordInput{
+		Date:         "2026-10-01",
+		Odometer:     "60000",
+		FuelConsumed: "45.5",
+		Cost:         "2100",
+		IsFillToFull: "true",
+		MissedFuelUp: "false",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error adding gas record: %v", err)
+	}
+
+	if fmt.Sprintf("%v", res.RecordID) != "42" {
+		t.Errorf("expected RecordID 42, got %v", res.RecordID)
+	}
+}
+
+func TestClient_AddNoteRecord(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/vehicle/notes/add" {
+			t.Errorf("expected path /api/vehicle/notes/add, got %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("vehicleId") != "1" {
+			t.Errorf("expected vehicleId=1, got %s", r.URL.Query().Get("vehicleId"))
+		}
+
+		var payload NoteRecordInput
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode json body: %v", err)
+		}
+		if payload.Description != "Tire Rotation" || payload.NoteText != "Done at front shop" {
+			t.Errorf("unexpected note payload: %+v", payload)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success": true, "message": "Note Added", "additionalData": {"recordId": 8}}`))
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "test-key", "", "", 2*time.Second)
+	res, err := c.AddNoteRecord(context.Background(), 1, NoteRecordInput{
+		Description: "Tire Rotation",
+		NoteText:    "Done at front shop",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error adding note record: %v", err)
+	}
+
+	if fmt.Sprintf("%v", res.RecordID) != "8" {
+		t.Errorf("expected RecordID 8, got %v", res.RecordID)
+	}
+}
+
 
