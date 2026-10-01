@@ -42,26 +42,35 @@ jobs:
 
           mkdir -p dist
 
-          # Build matrix: OS/ARCH
+          # Build matrix: OS/ARCH:UNAME_S:UNAME_M
           TARGETS=(
-            "linux/amd64"
-            "linux/arm64"
-            "darwin/arm64"
+            "darwin/arm64:Darwin:arm64"
+            "linux/amd64:Linux:x86_64"
+            "linux/arm64:Linux:aarch64"
           )
 
           cd cli
-          for TARGET in "${TARGETS[@]}"; do
+          for ENTRY in "${TARGETS[@]}"; do
+            TARGET="${ENTRY%%:*}"
+            UNAMES="${ENTRY#*:}"
+            UNAME_S="${UNAMES%%:*}"
+            UNAME_M="${UNAMES##*:}"
+
             GOOS="${TARGET%%/*}"
             GOARCH="${TARGET##*/}"
-            RAW_BINARY_NAME="lubelog-${GOOS}-${GOARCH}"
+            BIN_DIR="../dist/${GOOS}_${GOARCH}"
+            UNAME_BINARY_NAME="lubelog-${UNAME_S}-${UNAME_M}"
             ARCHIVE_NAME="lubelog_${TAG_NAME}_${GOOS}_${GOARCH}.tar.gz"
 
-            echo "==> Building for ${GOOS}/${GOARCH}..."
+            echo "==> Building for ${GOOS}/${GOARCH} (${UNAME_BINARY_NAME})..."
             mkdir -p "${BIN_DIR}"
             CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" go build -ldflags="${LDFLAGS}" -o "${BIN_DIR}/lubelog" ./cmd/lubelog
 
-            echo "==> Packaging ${RAW_BINARY_NAME} & ${ARCHIVE_NAME}..."
-            cp "${BIN_DIR}/lubelog" "../dist/${RAW_BINARY_NAME}"
+            echo "==> Packaging ${UNAME_BINARY_NAME} & ${ARCHIVE_NAME}..."
+            cp "${BIN_DIR}/lubelog" "../dist/${UNAME_BINARY_NAME}"
+            if [ "${UNAME_M}" = "aarch64" ]; then
+              cp "${BIN_DIR}/lubelog" "../dist/lubelog-Linux-arm64"
+            fi
             tar -czf "../dist/${ARCHIVE_NAME}" -C "${BIN_DIR}" lubelog
           done
           cd ..

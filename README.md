@@ -35,36 +35,24 @@ An ultra-fast, minimalist, **Agent-First** command-line interface and tool integ
 
 ## Installation
 
-### 1. Universal One-Line Installer (Recommended)
-Automatically detects your OS (macOS/Linux) and architecture (arm64/amd64), downloads the binary, and installs it to `/usr/local/bin`:
+### One-Line Install (`curl`)
+Single copy-paste command for macOS and Linux. Directly resolves your OS (`uname -s`) and CPU architecture (`uname -m`):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/burakberkkeskin/lubelogger-cli/main/install.sh | bash
+sudo curl -fsSL "https://github.com/burakberkkeskin/lubelogger-cli/releases/latest/download/lubelog-$(uname -s)-$(uname -m)" -o /usr/local/bin/lubelog && sudo chmod +x /usr/local/bin/lubelog
 ```
 
-### 2. Direct Binary Download (Platform Specific)
-
-* **macOS (Apple Silicon / M-series):**
-  ```bash
-  curl -fsSL https://github.com/burakberkkeskin/lubelogger-cli/releases/latest/download/lubelog-darwin-arm64 -o /usr/local/bin/lubelog && chmod +x /usr/local/bin/lubelog
-  ```
-
-* **Linux (x86_64 / amd64):**
-  ```bash
-  sudo curl -fsSL https://github.com/burakberkkeskin/lubelogger-cli/releases/latest/download/lubelog-linux-amd64 -o /usr/local/bin/lubelog && sudo chmod +x /usr/local/bin/lubelog
-  ```
-
-* **Linux (ARM64 / Raspberry Pi / Graviton):**
-  ```bash
-  sudo curl -fsSL https://github.com/burakberkkeskin/lubelogger-cli/releases/latest/download/lubelog-linux-arm64 -o /usr/local/bin/lubelog && sudo chmod +x /usr/local/bin/lubelog
-  ```
+*(Or install without sudo to `~/.local/bin`):*
+```bash
+curl -fsSL "https://github.com/burakberkkeskin/lubelogger-cli/releases/latest/download/lubelog-$(uname -s)-$(uname -m)" -o ~/.local/bin/lubelog && chmod +x ~/.local/bin/lubelog
+```
 
 > **Private Repository Access**: If downloading with the GitHub CLI:
 > ```bash
-> gh release download -R burakberkkeskin/lubelogger-cli --clobber -p "lubelog-$(uname -s | tr '[:upper:]' '[:lower:]')-*" -O /tmp/lubelog && sudo mv /tmp/lubelog /usr/local/bin/lubelog && sudo chmod +x /usr/local/bin/lubelog
+> gh release download -R burakberkkeskin/lubelogger-cli --clobber -p "lubelog-$(uname -s)-$(uname -m)" -O /tmp/lubelog && sudo mv /tmp/lubelog /usr/local/bin/lubelog && sudo chmod +x /usr/local/bin/lubelog
 > ```
 
-### 3. Build from Source (Local)
+### Build from Source (Local)
 ```bash
 make build   # Builds cli/bin/lubelog embedding current git tag and commit
 ```
