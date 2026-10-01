@@ -33,12 +33,25 @@ An ultra-fast, minimalist, **Agent-First** command-line interface and tool integ
 
 ---
 
-## Quickstart
+## Installation
 
-### 1. Build the Binary
+### Quick Install (One-Line curl)
+Automatically detects your operating system (Linux / macOS) and CPU architecture (amd64 / arm64), downloads the latest static binary, and installs it:
+
 ```bash
-cd cli
-go build -o bin/lubelog ./cmd/lubelog
+curl -fsSL https://github.com/burakberkkeskin/lubelogger-cli/releases/latest/download/lubelog_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz | tar -xz lubelog && sudo mv lubelog /usr/local/bin/
+```
+
+> **Private Repository Access**: If downloading with the GitHub CLI:
+> ```bash
+> gh release download -R burakberkkeskin/lubelogger-cli --clobber -p "*$(uname -s | tr '[:upper:]' '[:lower:]')*$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')*.tar.gz" -O - | tar -xz lubelog && sudo mv lubelog /usr/local/bin/
+> ```
+
+### Build from Source (Local)
+```bash
+make build   # Builds cli/bin/lubelog embedding current git tag and commit
+# or manually:
+cd cli && go build -o bin/lubelog ./cmd/lubelog
 ```
 
 ### 2. Configure Environment

@@ -3,12 +3,14 @@ package version
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
+	"strings"
 )
 
 var (
 	// Version is the semantic release version (e.g. "v0.1.0").
 	// It is injected at compile time via -ldflags.
-	Version = "0.1.0-dev"
+	Version = "dev"
 
 	// Commit is the git commit SHA.
 	Commit = "none"
@@ -27,12 +29,41 @@ type Info struct {
 	Arch      string `json:"arch"`
 }
 
-// Get returns the current version info.
+// Get returns the current version info, falling back to runtime/debug VCS info if available.
 func Get() Info {
+	v := Version
+	commit := Commit
+	date := Date
+
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		if v == "dev" && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+			v = bi.Main.Version
+		}
+		for _, s := range bi.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				if commit == "none" {
+					commit = s.Value
+					if len(commit) > 7 {
+						commit = commit[:7]
+					}
+				}
+			case "vcs.time":
+				if date == "unknown" {
+					date = s.Value
+				}
+			case "vcs.modified":
+				if s.Value == "true" && !strings.HasSuffix(commit, "-dirty") && commit != "none" {
+					commit += "-dirty"
+				}
+			}
+		}
+	}
+
 	return Info{
-		Version:   Version,
-		Commit:    Commit,
-		Date:      Date,
+		Version:   v,
+		Commit:    commit,
+		Date:      date,
 		GoVersion: runtime.Version(),
 		OS:        runtime.GOOS,
 		Arch:      runtime.GOARCH,
@@ -41,8 +72,15 @@ func Get() Info {
 
 // String returns a human-readable representation of version info.
 func (i Info) String() string {
-	if i.Commit != "none" && i.Date != "unknown" {
-		return fmt.Sprintf("lubelog %s (%s/%s, %s, commit: %s, date: %s)", i.Version, i.OS, i.Arch, i.GoVersion, i.Commit, i.Date)
+	var meta []string
+	if i.Commit != "none" {
+		meta = append(meta, fmt.Sprintf("commit: %s", i.Commit))
+	}
+	if i.Date != "unknown" {
+		meta = append(meta, fmt.Sprintf("date: %s", i.Date))
+	}
+	if len(meta) > 0 {
+		return fmt.Sprintf("lubelog %s (%s/%s, %s, %s)", i.Version, i.OS, i.Arch, i.GoVersion, strings.Join(meta, ", "))
 	}
 	return fmt.Sprintf("lubelog %s (%s/%s, %s)", i.Version, i.OS, i.Arch, i.GoVersion)
 }

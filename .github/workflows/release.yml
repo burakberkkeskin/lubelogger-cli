@@ -55,13 +55,15 @@ jobs:
             GOARCH="${TARGET##*/}"
             BIN_DIR="../dist/${GOOS}_${GOARCH}"
             ARCHIVE_NAME="lubelog_${TAG_NAME}_${GOOS}_${GOARCH}.tar.gz"
+            LATEST_ARCHIVE_NAME="lubelog_${GOOS}_${GOARCH}.tar.gz"
 
             echo "==> Building for ${GOOS}/${GOARCH}..."
             mkdir -p "${BIN_DIR}"
             CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" go build -ldflags="${LDFLAGS}" -o "${BIN_DIR}/lubelog" ./cmd/lubelog
 
-            echo "==> Packaging ${ARCHIVE_NAME}..."
+            echo "==> Packaging ${ARCHIVE_NAME} & ${LATEST_ARCHIVE_NAME}..."
             tar -czf "../dist/${ARCHIVE_NAME}" -C "${BIN_DIR}" lubelog
+            cp "../dist/${ARCHIVE_NAME}" "../dist/${LATEST_ARCHIVE_NAME}"
           done
           cd ..
 
