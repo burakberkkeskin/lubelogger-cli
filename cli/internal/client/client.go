@@ -215,3 +215,99 @@ func (c *Client) GetNotes(ctx context.Context, vehicleID int) ([]NoteRecord, err
 	}
 	return notes, nil
 }
+
+// GetGasRecords calls /api/vehicle/gasrecords?vehicleId={id}.
+func (c *Client) GetGasRecords(ctx context.Context, vehicleID int) ([]GasRecord, error) {
+	path := fmt.Sprintf("/api/vehicle/gasrecords?vehicleId=%d", vehicleID)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	var records []GasRecord
+	if err := c.doRequest(req, &records); err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+// DownloadFile fetches a file attachment from the LubeLogger server.
+// Returns the reader for file bytes, Content-Type, Content-Length, and error.
+// The caller is responsible for closing the returned ReadCloser.
+func (c *Client) DownloadFile(ctx context.Context, location string) (io.ReadCloser, string, int64, error) {
+	cleanPath := location
+	if !strings.HasPrefix(cleanPath, "/") && !strings.HasPrefix(cleanPath, "http://") && !strings.HasPrefix(cleanPath, "https://") {
+		cleanPath = "/" + cleanPath
+	}
+
+	var req *http.Request
+	var err error
+	if strings.HasPrefix(cleanPath, "http://") || strings.HasPrefix(cleanPath, "https://") {
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, cleanPath, nil)
+	} else {
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+cleanPath, nil)
+	}
+	if err != nil {
+		return nil, "", 0, fmt.Errorf("failed to create download request: %w", err)
+	}
+
+	// Apply authentication
+	if c.APIKey != "" {
+		req.Header.Set("x-api-key", c.APIKey)
+	} else if c.Username != "" && c.Password != "" {
+		creds := base64.StdEncoding.EncodeToString([]byte(c.Username + ":" + c.Password))
+		req.Header.Set("Authorization", "Basic "+creds)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, "", 0, &APIError{
+			StatusCode: 0,
+			Code:       "NETWORK_ERROR",
+			Message:    err.Error(),
+		}
+	}
+
+	if resp.StatusCode == http.StatusFound || resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusTemporaryRedirect {
+		loc := resp.Header.Get("Location")
+		if strings.Contains(strings.ToLower(loc), "login") {
+			resp.Body.Close()
+			return nil, "", 0, &APIError{
+				StatusCode: http.StatusUnauthorized,
+				Code:       "AUTH_ERROR",
+				Message:    "authentication required to download file (redirected to login)",
+			}
+		}
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		resp.Body.Close()
+		return nil, "", 0, &APIError{
+			StatusCode: resp.StatusCode,
+			Code:       "AUTH_ERROR",
+			Message:    "authentication failed or access denied for file download",
+		}
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		resp.Body.Close()
+		return nil, "", 0, &APIError{
+			StatusCode: http.StatusNotFound,
+			Code:       "NOT_FOUND",
+			Message:    fmt.Sprintf("file not found at location '%s'", location),
+		}
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		resp.Body.Close()
+		return nil, "", 0, &APIError{
+			StatusCode: resp.StatusCode,
+			Code:       "HTTP_ERROR",
+			Message:    fmt.Sprintf("unexpected HTTP status %d downloading file", resp.StatusCode),
+		}
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	contentLength := resp.ContentLength
+	return resp.Body, contentType, contentLength, nil
+}
+

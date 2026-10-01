@@ -25,33 +25,62 @@ type NextReminder struct {
 	Metric      string `json:"metric,omitempty"`
 }
 
-// ServiceRecord represents a single service/maintenance event for a vehicle.
-type ServiceRecord struct {
-	ID          interface{} `json:"id"`
-	VehicleID   interface{} `json:"vehicleId"`
-	Date        string      `json:"date"`
-	Odometer    interface{} `json:"odometer"`
-	Description string      `json:"description"`
-	Cost        interface{} `json:"cost"`
-	Notes       *string     `json:"notes,omitempty"`
-	Tags        interface{} `json:"tags,omitempty"`
-}
-
-// NoteFile represents an attachment on a vehicle note.
-type NoteFile struct {
+// UploadedFile represents a file attachment (invoice, report, image) on any record.
+type UploadedFile struct {
 	Name     string `json:"name"`
 	Location string `json:"location"`
 }
 
+// NoteFile is an alias for UploadedFile.
+type NoteFile = UploadedFile
+
+// ServiceRecord represents a single service/maintenance event for a vehicle.
+type ServiceRecord struct {
+	ID          interface{}    `json:"id"`
+	VehicleID   interface{}    `json:"vehicleId"`
+	Date        string         `json:"date"`
+	Odometer    interface{}    `json:"odometer"`
+	Description string         `json:"description"`
+	Cost        interface{}    `json:"cost"`
+	Notes       *string        `json:"notes,omitempty"`
+	Tags        interface{}    `json:"tags,omitempty"`
+	Files       []UploadedFile `json:"files,omitempty"`
+}
+
+// GasRecord represents a fuel-up entry for a vehicle.
+type GasRecord struct {
+	ID           interface{}    `json:"id"`
+	VehicleID    interface{}    `json:"vehicleId"`
+	Date         string         `json:"date"`
+	Odometer     interface{}    `json:"odometer"`
+	FuelConsumed interface{}    `json:"fuelConsumed"`
+	Cost         interface{}    `json:"cost"`
+	FuelEconomy  interface{}    `json:"fuelEconomy,omitempty"`
+	IsFillToFull interface{}    `json:"isFillToFull,omitempty"`
+	MissedFuelUp interface{}    `json:"missedFuelUp,omitempty"`
+	Notes        *string        `json:"notes,omitempty"`
+	Tags         interface{}    `json:"tags,omitempty"`
+	Files        []UploadedFile `json:"files,omitempty"`
+}
+
 // NoteRecord represents a freeform note or document entry for a vehicle.
 type NoteRecord struct {
-	ID          interface{} `json:"id"`
-	VehicleID   interface{} `json:"vehicleId"`
-	Description string      `json:"description"`
-	NoteText    string      `json:"noteText"`
-	Pinned      interface{} `json:"pinned,omitempty"`
-	Tags        interface{} `json:"tags,omitempty"`
-	Files       []NoteFile  `json:"files,omitempty"`
+	ID          interface{}    `json:"id"`
+	VehicleID   interface{}    `json:"vehicleId"`
+	Description string         `json:"description"`
+	NoteText    string         `json:"noteText"`
+	Pinned      interface{}    `json:"pinned,omitempty"`
+	Tags        interface{}    `json:"tags,omitempty"`
+	Files       []UploadedFile `json:"files,omitempty"`
+}
+
+// DownloadedFile represents the outcome of a downloaded file attachment.
+type DownloadedFile struct {
+	Name        string `json:"name"`
+	Location    string `json:"location"`
+	SavedTo     string `json:"savedTo"`
+	Bytes       int64  `json:"bytes"`
+	ContentType string `json:"contentType,omitempty"`
 }
 
 // VehicleInfo represents aggregated statistics and state for a vehicle.

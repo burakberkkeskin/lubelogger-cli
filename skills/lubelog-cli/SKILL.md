@@ -190,7 +190,66 @@ lubelog note list 3 --json
 
 ---
 
-### 6. `lubelog version` (or `-v`, `--version`)
+### 6. `lubelog fuel list <vehicleId>` (alias: `gas`)
+Lists fuel-up logs and efficiency history for a vehicle.
+
+```bash
+lubelog fuel list 3 --limit 5 --json
+```
+
+**JSON Output Example:**
+```json
+[
+  {
+    "id": 40,
+    "vehicleId": 3,
+    "date": "2025-09-22",
+    "odometer": 56003,
+    "fuelConsumed": 41.43,
+    "cost": 2200,
+    "fuelEconomy": 0,
+    "isFillToFull": true,
+    "missedFuelUp": false,
+    "tags": "shell"
+  }
+]
+```
+
+---
+
+### 7. Downloading Attachments & Documents
+Download attached files (invoices, receipts, inspection PDFs, photos) from service records, fuel entries, notes, or directly by file path:
+
+```bash
+# Download all attachments from a service record
+lubelog service download <vehicleId> <recordId> [--output <dir>] --json
+
+# Download all attachments from a fuel record
+lubelog fuel download <vehicleId> <recordId> [--output <dir>] --json
+
+# Download all attachments from a note
+lubelog note download <vehicleId> <noteId> [--output <dir>] --json
+
+# Direct download by server location / URL
+lubelog file download /documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf --output ./ekspertiz.pdf --json
+```
+
+**JSON Output Example:**
+```json
+[
+  {
+    "name": "tarcanlar-ekspertiz.pdf",
+    "location": "/documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf",
+    "savedTo": "./downloads/tarcanlar-ekspertiz.pdf",
+    "bytes": 10674297,
+    "contentType": "application/pdf"
+  }
+]
+```
+
+---
+
+### 8. `lubelog version` (or `-v`, `--version`)
 Displays CLI version, build timestamp, commit SHA, and Go/OS/Arch metadata.
 
 ```bash
@@ -218,10 +277,16 @@ When an AI Agent is asked a question regarding vehicles or maintenance, follow t
 1. **Step 1: Discover Vehicles & Resolve ID**
    * Run `lubelog vehicle list --json`
    * Match the user's vehicle name, plate, or model (e.g. "Egea" -> `id: 3`).
-2. **Step 2: Fetch Target Information**
+2. **Step 2: Fetch Target Information & Download Documents**
    * If the user asks for vehicle overview/mileage: `lubelog vehicle get <id> --json`
    * If the user asks for service records: `lubelog service list <id> [--limit <n>] --json`
+   * If the user asks for fuel/gas history: `lubelog fuel list <id> [--limit <n>] --json`
    * If the user asks for notes, documents, or expert reports: `lubelog note list <id> --json`
+   * If the user asks to download an invoice, report, or file:
+     - From service record: `lubelog service download <id> <serviceId> [--output <dir>] --json`
+     - From fuel record: `lubelog fuel download <id> <fuelId> [--output <dir>] --json`
+     - From note: `lubelog note download <id> <noteId> [--output <dir>] --json`
+     - Direct by path/URL: `lubelog file download <location> [--output <path>] --json`
 3. **Step 3: Parse & Present**
    * Parse the pure JSON array. Format the dates, costs, odometers, notes, and file names cleanly for the user.
 

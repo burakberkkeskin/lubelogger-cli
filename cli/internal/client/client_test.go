@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -162,3 +163,68 @@ func TestClient_Errors(t *testing.T) {
 		t.Errorf("expected NOT_FOUND, got %v", err)
 	}
 }
+
+func TestClient_GetGasRecords(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/vehicle/gasrecords" {
+			t.Errorf("expected path /api/vehicle/gasrecords, got %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[
+			{"id": 40, "vehicleId": 1, "date": "2025-09-22", "odometer": 56003, "fuelConsumed": 41.43, "cost": 2200, "files": []}
+		]`))
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "", "", "", 2*time.Second)
+	records, err := c.GetGasRecords(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+	if fmt.Sprintf("%v", records[0].ID) != "40" {
+		t.Errorf("expected record ID 40, got %v", records[0].ID)
+	}
+}
+
+func TestClient_DownloadFile(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/documents/test.pdf" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("%PDF-1.4 test document content"))
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "", "", "", 2*time.Second)
+
+	// Successful download
+	rc, contentType, length, err := c.DownloadFile(context.Background(), "/documents/test.pdf")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer rc.Close()
+
+	if contentType != "application/pdf" {
+		t.Errorf("expected content-type application/pdf, got %s", contentType)
+	}
+	if length != int64(len("%PDF-1.4 test document content")) {
+		t.Errorf("expected length %d, got %d", len("%PDF-1.4 test document content"), length)
+	}
+
+	// 404 download
+	_, _, _, err = c.DownloadFile(context.Background(), "/documents/nonexistent.pdf")
+	if err == nil {
+		t.Fatalf("expected error for 404 file, got nil")
+	}
+	if apiErr, ok := err.(*APIError); !ok || apiErr.Code != "NOT_FOUND" {
+		t.Errorf("expected NOT_FOUND APIError, got %v", err)
+	}
+}
+

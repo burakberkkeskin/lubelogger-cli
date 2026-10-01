@@ -61,12 +61,28 @@ export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 # List service/maintenance records (limit to last 3)
 ./cli/bin/lubelog service list 1 --limit 3 --json
 
+# Download attachments for a service record
+./cli/bin/lubelog service download 1 14 --output ./downloads
+
+# List fuel / gas entries
+./cli/bin/lubelog fuel list 1 --limit 5 --json
+
+# Download attachments for a fuel entry
+./cli/bin/lubelog fuel download 1 40 --output ./downloads
+
 # List notes, expert reports and attachments
 ./cli/bin/lubelog note list 1 --json
+
+# Download attachments for a note
+./cli/bin/lubelog note download 1 1 --output ./downloads
+
+# Direct file download by server path/URL
+./cli/bin/lubelog file download /documents/abc-123.pdf --output ./report.pdf
 
 # Human-readable table output
 ./cli/bin/lubelog vehicle list
 ./cli/bin/lubelog service list 1 --limit 3
+./cli/bin/lubelog fuel list 1
 ./cli/bin/lubelog note list 1
 
 # Version information

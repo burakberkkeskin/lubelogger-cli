@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	ExitSuccess      = 0
-	ExitGeneralError = 1
-	ExitAuthError    = 2
-	ExitNotFound     = 3
-	ExitNetworkError = 4
-	ExitUsageError   = 5
+	ExitSuccess       = 0
+	ExitGeneralError  = 1
+	ExitAuthError     = 2
+	ExitNotFound      = 3
+	ExitNotFoundError = 3
+	ExitNetworkError  = 4
+	ExitUsageError    = 5
 )
 
 // ErrorEnvelope is the structured error format emitted to stderr when in JSON mode.

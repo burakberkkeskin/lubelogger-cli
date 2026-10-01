@@ -31,12 +31,17 @@ USAGE:
   lubelog [flags] <command> [arguments...]
 
 COMMANDS:
-  status                     Check LubeLogger server health and authenticated identity
-  vehicle list               List all accessible vehicles (alias: vehicles)
-  vehicle get <id>           Get detailed info and aggregates for a vehicle (alias: vehicle <id>)
-  service list <vehicleId>   List service/maintenance records for a vehicle (alias: service <id>)
-  note list <vehicleId>      List notes and document attachments for a vehicle (alias: note <id>)
-  version                    Display CLI version and build metadata
+  status                                 Check LubeLogger server health and authenticated identity
+  vehicle list                           List all accessible vehicles (alias: vehicles)
+  vehicle get <id>                       Get detailed info and aggregates for a vehicle (alias: vehicle <id>)
+  service list <vehicleId>               List service/maintenance records for a vehicle (alias: service <id>)
+  service download <vehicleId> <recId>   Download attachments for a service record
+  fuel list <vehicleId>                  List fuel/gas entries for a vehicle (alias: gas)
+  fuel download <vehicleId> <recId>      Download attachments for a fuel record
+  note list <vehicleId>                  List notes and document attachments for a vehicle (alias: note <id>)
+  note download <vehicleId> <noteId>     Download attachments for a note record
+  file download <location>               Download file attachment directly by path (alias: download <loc>)
+  version                                Display CLI version and build metadata
 
 GLOBAL FLAGS:
   --url <string>        Base URL of LubeLogger (default: $LUBELOGGER_URL or http://localhost:5000)
@@ -45,6 +50,8 @@ GLOBAL FLAGS:
   --password <string>   Password for Basic Auth fallback (default: $LUBELOGGER_PASSWORD)
   --timeout <string>    Request timeout duration (default: $LUBELOGGER_TIMEOUT or 10s)
   --limit <int>         Limit number of records returned (e.g. --limit 3)
+  --output, -o <path>   Output destination file or directory for downloads
+  --dir <path>          Output directory for downloaded files
   --json                Output response in pure JSON format (default: non-TTY)
   -v, --version         Display CLI version
   -h, --help            Show this help message
@@ -62,6 +69,11 @@ EXAMPLES:
   lubelog vehicle list --json
   lubelog vehicle get 1 --json
   lubelog service list 1 --limit 3 --json
+  lubelog service download 1 14 --output ./downloads
+  lubelog fuel list 1 --json
+  lubelog fuel download 1 40 --output ./downloads
+  lubelog note download 1 3 --output ./downloads
+  lubelog file download /documents/abc-123.pdf --output ./report.pdf
   lubelog --version
   lubelog --url https://lubelogger.burakberk.dev --api-key <TOKEN> vehicle list`)
 }
@@ -74,6 +86,9 @@ func parseArgs(args []string) (flags []string, positional []string) {
 		"--password": true, "-password": true,
 		"--timeout": true, "-timeout": true,
 		"--limit": true, "-limit": true,
+		"--output": true, "-output": true,
+		"-o": true,
+		"--dir": true, "-dir": true,
 	}
 
 	for i := 0; i < len(args); i++ {
@@ -93,6 +108,7 @@ func parseArgs(args []string) (flags []string, positional []string) {
 
 func main() {
 	var flagURL, flagAPIKey, flagUser, flagPass, flagTimeout string
+	var flagOutput, flagDir string
 	var flagLimit int
 	var flagJSON, flagHelp, flagVersion bool
 
@@ -106,6 +122,9 @@ func main() {
 	fs.StringVar(&flagUser, "username", "", "Username")
 	fs.StringVar(&flagPass, "password", "", "Password")
 	fs.StringVar(&flagTimeout, "timeout", "", "Request timeout")
+	fs.StringVar(&flagOutput, "output", "", "Output destination file or directory")
+	fs.StringVar(&flagOutput, "o", "", "Output destination file or directory")
+	fs.StringVar(&flagDir, "dir", "", "Output directory for downloads")
 	fs.IntVar(&flagLimit, "limit", 0, "Limit number of records returned")
 	fs.BoolVar(&flagJSON, "json", false, "Force JSON output")
 	fs.BoolVar(&flagVersion, "version", false, "Show version")
@@ -127,6 +146,10 @@ func main() {
 	if flagHelp || len(args) == 0 {
 		printUsage()
 		os.Exit(output.ExitSuccess)
+	}
+
+	if flagOutput == "" && flagDir != "" {
+		flagOutput = flagDir
 	}
 
 	cfg := config.LoadConfig(flagURL, flagAPIKey, flagUser, flagPass, flagTimeout, flagJSON)
@@ -173,10 +196,26 @@ func main() {
 
 	case "services", "service":
 		if len(args) < 2 {
-			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'service list <vehicleId>' (e.g. 'lubelog service list 1 --limit 3')", 0, output.ExitUsageError, cfg.JSONOutput)
+			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'service list <vehicleId>' or 'service download <vehicleId> <recordId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		subCmd := strings.ToLower(args[1])
+		if subCmd == "download" {
+			if len(args) < 4 {
+				output.ExitWithError("MISSING_ARGUMENT", "usage: 'lubelog service download <vehicleId> <recordId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			vID, err := strconv.Atoi(args[2])
+			if err != nil || vID <= 0 {
+				output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			rID, err := strconv.Atoi(args[3])
+			if err != nil || rID <= 0 {
+				output.ExitWithError("INVALID_ARGUMENT", "record ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			commands.RunServiceDownload(ctx, cfg, apiClient, vID, rID, flagOutput)
+			return
 		}
 		targetArg := args[1]
-		if strings.ToLower(targetArg) == "list" || strings.ToLower(targetArg) == "ls" {
+		if subCmd == "list" || subCmd == "ls" {
 			if len(args) < 3 {
 				output.ExitWithError("MISSING_ARGUMENT", "missing required vehicle ID: 'lubelog service list <vehicleId>'", 0, output.ExitUsageError, cfg.JSONOutput)
 			}
@@ -188,12 +227,61 @@ func main() {
 		}
 		commands.RunServiceList(ctx, cfg, apiClient, vehicleID, flagLimit)
 
-	case "notes", "note":
+	case "fuels", "fuel", "gas", "gasrecords":
 		if len(args) < 2 {
-			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'note list <vehicleId>' (e.g. 'lubelog note list 1')", 0, output.ExitUsageError, cfg.JSONOutput)
+			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'fuel list <vehicleId>' or 'fuel download <vehicleId> <recordId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		subCmd := strings.ToLower(args[1])
+		if subCmd == "download" {
+			if len(args) < 4 {
+				output.ExitWithError("MISSING_ARGUMENT", "usage: 'lubelog fuel download <vehicleId> <recordId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			vID, err := strconv.Atoi(args[2])
+			if err != nil || vID <= 0 {
+				output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			rID, err := strconv.Atoi(args[3])
+			if err != nil || rID <= 0 {
+				output.ExitWithError("INVALID_ARGUMENT", "record ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			commands.RunFuelDownload(ctx, cfg, apiClient, vID, rID, flagOutput)
+			return
 		}
 		targetArg := args[1]
-		if strings.ToLower(targetArg) == "list" || strings.ToLower(targetArg) == "ls" {
+		if subCmd == "list" || subCmd == "ls" {
+			if len(args) < 3 {
+				output.ExitWithError("MISSING_ARGUMENT", "missing required vehicle ID: 'lubelog fuel list <vehicleId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			targetArg = args[2]
+		}
+		vehicleID, err := strconv.Atoi(targetArg)
+		if err != nil || vehicleID <= 0 {
+			output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		commands.RunFuelList(ctx, cfg, apiClient, vehicleID, flagLimit)
+
+	case "notes", "note":
+		if len(args) < 2 {
+			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'note list <vehicleId>' or 'note download <vehicleId> <recordId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		subCmd := strings.ToLower(args[1])
+		if subCmd == "download" {
+			if len(args) < 4 {
+				output.ExitWithError("MISSING_ARGUMENT", "usage: 'lubelog note download <vehicleId> <recordId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			vID, err := strconv.Atoi(args[2])
+			if err != nil || vID <= 0 {
+				output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			rID, err := strconv.Atoi(args[3])
+			if err != nil || rID <= 0 {
+				output.ExitWithError("INVALID_ARGUMENT", "record ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			commands.RunNoteDownload(ctx, cfg, apiClient, vID, rID, flagOutput)
+			return
+		}
+		targetArg := args[1]
+		if subCmd == "list" || subCmd == "ls" {
 			if len(args) < 3 {
 				output.ExitWithError("MISSING_ARGUMENT", "missing required vehicle ID: 'lubelog note list <vehicleId>'", 0, output.ExitUsageError, cfg.JSONOutput)
 			}
@@ -205,6 +293,26 @@ func main() {
 		}
 		commands.RunNoteList(ctx, cfg, apiClient, vehicleID)
 
+	case "file", "document", "attachment":
+		if len(args) < 2 {
+			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'file download <location>' (e.g. 'lubelog file download /documents/xxx.pdf')", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		subCmd := strings.ToLower(args[1])
+		if subCmd == "download" || subCmd == "get" {
+			if len(args) < 3 {
+				output.ExitWithError("MISSING_ARGUMENT", "missing required file location: 'lubelog file download <location>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			commands.RunFileDownload(ctx, cfg, apiClient, args[2], flagOutput)
+		} else {
+			commands.RunFileDownload(ctx, cfg, apiClient, args[1], flagOutput)
+		}
+
+	case "download":
+		if len(args) < 2 {
+			output.ExitWithError("MISSING_ARGUMENT", "missing file location: 'lubelog download <location>'", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		commands.RunFileDownload(ctx, cfg, apiClient, args[1], flagOutput)
+
 	case "help":
 		printUsage()
 
@@ -212,3 +320,4 @@ func main() {
 		output.ExitWithError("UNKNOWN_COMMAND", fmt.Sprintf("unknown command '%s'. Run 'lubelog --help' for usage.", cmd), 0, output.ExitUsageError, cfg.JSONOutput)
 	}
 }
+
