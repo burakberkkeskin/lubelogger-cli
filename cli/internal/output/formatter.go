@@ -142,3 +142,32 @@ func FormatServiceRecords(records []client.ServiceRecord, asJSON bool) error {
 	}
 	return w.Flush()
 }
+
+// FormatNotes prints a list of vehicle notes as JSON or formatted text.
+func FormatNotes(notes []client.NoteRecord, asJSON bool) error {
+	if asJSON {
+		return PrintJSON(notes)
+	}
+
+	if len(notes) == 0 {
+		fmt.Println("No notes found for this vehicle.")
+		return nil
+	}
+
+	fmt.Printf("=== Vehicle Notes (%d entries) ===\n\n", len(notes))
+	for _, n := range notes {
+		fmt.Printf("[%v] %s\n", n.ID, n.Description)
+		if n.NoteText != "" && n.NoteText != n.Description {
+			fmt.Printf("    Note:  %s\n", strings.ReplaceAll(n.NoteText, "\n", "\n    "))
+		}
+		if len(n.Files) > 0 {
+			var fileNames []string
+			for _, f := range n.Files {
+				fileNames = append(fileNames, f.Name)
+			}
+			fmt.Printf("    Files: %s\n", strings.Join(fileNames, ", "))
+		}
+		fmt.Println()
+	}
+	return nil
+}

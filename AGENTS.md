@@ -35,6 +35,7 @@ Incoming agents in a fresh context MUST NOT scan source code. Use the CLI comman
 | **Find vehicle ID** | List vehicles by plate / name | `lubelog vehicle list --json` |
 | **Inspect vehicle summary** | Get odometer, reminder & costs | `lubelog vehicle get <id> --json` |
 | **Fetch service records** | Get maintenance history / last N records | `lubelog service list <id> --limit <n> --json` |
+| **Fetch notes & documents** | Get expert reports, notes & files | `lubelog note list <id> --json` |
 
 ---
 

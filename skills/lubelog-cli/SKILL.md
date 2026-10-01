@@ -162,6 +162,34 @@ lubelog service list 3 --limit 3 --json
 
 ---
 
+### 5. `lubelog note list <vehicleId>`
+Retrieves notes, reminders, expert reports, and attached files/documents for a vehicle.
+
+```bash
+lubelog note list 3 --json
+```
+
+**JSON Output Example:**
+```json
+[
+  {
+    "id": 1,
+    "vehicleId": 3,
+    "description": "Vavacars Tarcanlar Ekspertiz",
+    "noteText": "Aracın Vavacars'dan satın alınırkenki 6.000 KM Tarcanlar ekspertiz raporu.",
+    "pinned": false,
+    "files": [
+      {
+        "name": "tarcanlar-ekspertiz.pdf",
+        "location": "/documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf"
+      }
+    ]
+  }
+]
+```
+
+---
+
 ## Autonomous Agent Execution Protocols (Blank-Context Guide)
 
 When an AI Agent is asked a question regarding vehicles or maintenance, follow this exact 3-step protocol without inspecting the codebase:
@@ -171,9 +199,10 @@ When an AI Agent is asked a question regarding vehicles or maintenance, follow t
    * Match the user's vehicle name, plate, or model (e.g. "Egea" -> `id: 3`).
 2. **Step 2: Fetch Target Information**
    * If the user asks for vehicle overview/mileage: `lubelog vehicle get <id> --json`
-   * If the user asks for service records (e.g. "son 3 servis kaydı"): `lubelog service list <id> --limit 3 --json`
+   * If the user asks for service records: `lubelog service list <id> [--limit <n>] --json`
+   * If the user asks for notes, documents, or expert reports: `lubelog note list <id> --json`
 3. **Step 3: Parse & Present**
-   * Parse the pure JSON array. Format the dates, costs, odometers, and notes cleanly for the user.
+   * Parse the pure JSON array. Format the dates, costs, odometers, notes, and file names cleanly for the user.
 
 ---
 

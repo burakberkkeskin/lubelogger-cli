@@ -27,6 +27,7 @@ COMMANDS:
   vehicle list               List all accessible vehicles (alias: vehicles)
   vehicle get <id>           Get detailed info and aggregates for a vehicle (alias: vehicle <id>)
   service list <vehicleId>   List service/maintenance records for a vehicle (alias: service <id>)
+  note list <vehicleId>      List notes and document attachments for a vehicle (alias: note <id>)
   version                    Display CLI version
 
 GLOBAL FLAGS:
@@ -173,6 +174,23 @@ func main() {
 			output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
 		}
 		commands.RunServiceList(ctx, cfg, apiClient, vehicleID, flagLimit)
+
+	case "notes", "note":
+		if len(args) < 2 {
+			output.ExitWithError("MISSING_SUBCOMMAND", "expected 'note list <vehicleId>' (e.g. 'lubelog note list 1')", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		targetArg := args[1]
+		if strings.ToLower(targetArg) == "list" || strings.ToLower(targetArg) == "ls" {
+			if len(args) < 3 {
+				output.ExitWithError("MISSING_ARGUMENT", "missing required vehicle ID: 'lubelog note list <vehicleId>'", 0, output.ExitUsageError, cfg.JSONOutput)
+			}
+			targetArg = args[2]
+		}
+		vehicleID, err := strconv.Atoi(targetArg)
+		if err != nil || vehicleID <= 0 {
+			output.ExitWithError("INVALID_ARGUMENT", "vehicle ID must be a positive integer", 0, output.ExitUsageError, cfg.JSONOutput)
+		}
+		commands.RunNoteList(ctx, cfg, apiClient, vehicleID)
 
 	case "help":
 		printUsage()

@@ -37,6 +37,23 @@ type ServiceRecord struct {
 	Tags        interface{} `json:"tags,omitempty"`
 }
 
+// NoteFile represents an attachment on a vehicle note.
+type NoteFile struct {
+	Name     string `json:"name"`
+	Location string `json:"location"`
+}
+
+// NoteRecord represents a freeform note or document entry for a vehicle.
+type NoteRecord struct {
+	ID          interface{} `json:"id"`
+	VehicleID   interface{} `json:"vehicleId"`
+	Description string      `json:"description"`
+	NoteText    string      `json:"noteText"`
+	Pinned      interface{} `json:"pinned,omitempty"`
+	Tags        interface{} `json:"tags,omitempty"`
+	Files       []NoteFile  `json:"files,omitempty"`
+}
+
 // VehicleInfo represents aggregated statistics and state for a vehicle.
 type VehicleInfo struct {
 	VehicleData             Vehicle       `json:"vehicleData"`
