@@ -41,6 +41,7 @@ jobs:
             -X 'github.com/burakberk/lubelogger-cli/internal/version.Date=${BUILD_DATE}'"
 
           mkdir -p dist
+          TMP_DIR=$(mktemp -d)
 
           # Build matrix: OS/ARCH:UNAME_S:UNAME_M
           TARGETS=(
@@ -58,7 +59,7 @@ jobs:
 
             GOOS="${TARGET%%/*}"
             GOARCH="${TARGET##*/}"
-            BIN_DIR="../dist/${GOOS}_${GOARCH}"
+            BIN_DIR="${TMP_DIR}/${GOOS}_${GOARCH}"
             UNAME_BINARY_NAME="lubelog-${UNAME_S}-${UNAME_M}"
             ARCHIVE_NAME="lubelog_${TAG_NAME}_${GOOS}_${GOARCH}.tar.gz"
 
@@ -74,10 +75,11 @@ jobs:
             tar -czf "../dist/${ARCHIVE_NAME}" -C "${BIN_DIR}" lubelog
           done
           cd ..
+          rm -rf "${TMP_DIR}"
 
           echo "==> Generating sha256 checksums..."
           cd dist
-          sha256sum * > checksums.txt 2>/dev/null || shasum -a 256 * > checksums.txt
+          sha256sum lubelog-* *.tar.gz > checksums.txt
           cat checksums.txt
           cd ..
 
