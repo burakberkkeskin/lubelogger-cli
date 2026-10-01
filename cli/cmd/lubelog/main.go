@@ -12,9 +12,17 @@ import (
 	"github.com/burakberk/lubelogger-cli/internal/commands"
 	"github.com/burakberk/lubelogger-cli/internal/config"
 	"github.com/burakberk/lubelogger-cli/internal/output"
+	"github.com/burakberk/lubelogger-cli/internal/version"
 )
 
-const version = "0.1.0"
+func printVersion(asJSON bool) {
+	info := version.Get()
+	if asJSON {
+		_ = output.PrintJSON(info)
+	} else {
+		fmt.Println(info.String())
+	}
+}
 
 func printUsage() {
 	fmt.Println(`LubeLogger CLI (lubelog) - Agent-First Vehicle Maintenance Query Tool
@@ -28,7 +36,7 @@ COMMANDS:
   vehicle get <id>           Get detailed info and aggregates for a vehicle (alias: vehicle <id>)
   service list <vehicleId>   List service/maintenance records for a vehicle (alias: service <id>)
   note list <vehicleId>      List notes and document attachments for a vehicle (alias: note <id>)
-  version                    Display CLI version
+  version                    Display CLI version and build metadata
 
 GLOBAL FLAGS:
   --url <string>        Base URL of LubeLogger (default: $LUBELOGGER_URL or http://localhost:5000)
@@ -38,6 +46,7 @@ GLOBAL FLAGS:
   --timeout <string>    Request timeout duration (default: $LUBELOGGER_TIMEOUT or 10s)
   --limit <int>         Limit number of records returned (e.g. --limit 3)
   --json                Output response in pure JSON format (default: non-TTY)
+  -v, --version         Display CLI version
   -h, --help            Show this help message
 
 ENVIRONMENT VARIABLES:
@@ -53,6 +62,7 @@ EXAMPLES:
   lubelog vehicle list --json
   lubelog vehicle get 1 --json
   lubelog service list 1 --limit 3 --json
+  lubelog --version
   lubelog --url https://lubelogger.burakberk.dev --api-key <TOKEN> vehicle list`)
 }
 
@@ -84,7 +94,7 @@ func parseArgs(args []string) (flags []string, positional []string) {
 func main() {
 	var flagURL, flagAPIKey, flagUser, flagPass, flagTimeout string
 	var flagLimit int
-	var flagJSON, flagHelp bool
+	var flagJSON, flagHelp, flagVersion bool
 
 	flagArgs, posArgs := parseArgs(os.Args[1:])
 
@@ -98,11 +108,18 @@ func main() {
 	fs.StringVar(&flagTimeout, "timeout", "", "Request timeout")
 	fs.IntVar(&flagLimit, "limit", 0, "Limit number of records returned")
 	fs.BoolVar(&flagJSON, "json", false, "Force JSON output")
+	fs.BoolVar(&flagVersion, "version", false, "Show version")
+	fs.BoolVar(&flagVersion, "v", false, "Show version")
 	fs.BoolVar(&flagHelp, "help", false, "Show help")
 	fs.BoolVar(&flagHelp, "h", false, "Show help")
 
 	if err := fs.Parse(flagArgs); err != nil {
 		output.ExitWithError("INVALID_FLAGS", err.Error(), 0, output.ExitUsageError, false)
+	}
+
+	if flagVersion {
+		printVersion(flagJSON)
+		os.Exit(output.ExitSuccess)
 	}
 
 	args := posArgs
@@ -120,11 +137,7 @@ func main() {
 
 	switch cmd {
 	case "version":
-		if cfg.JSONOutput {
-			_ = output.PrintJSON(map[string]string{"version": version})
-		} else {
-			fmt.Printf("lubelog version %s\n", version)
-		}
+		printVersion(cfg.JSONOutput)
 
 	case "status", "ping", "health":
 		commands.RunStatus(ctx, cfg, apiClient)

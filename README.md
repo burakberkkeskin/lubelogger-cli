@@ -68,6 +68,10 @@ export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 ./cli/bin/lubelog vehicle list
 ./cli/bin/lubelog service list 1 --limit 3
 ./cli/bin/lubelog note list 1
+
+# Version information
+./cli/bin/lubelog --version
+./cli/bin/lubelog version --json
 ```
 
 ---
@@ -80,3 +84,38 @@ export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 * `3`: Resource Not Found (404)
 * `4`: Network / Connectivity error
 * `5`: Validation / Usage error
+
+---
+
+## Release Pipeline & Cross-Compilation
+
+The repository features an automated GitHub Actions pipeline (`.github/workflows/release.yml`) that triggers **exclusively on version tag pushes** (`v*`).
+
+### Target Architectures
+Each release automatically builds pure Go static binaries (`CGO_ENABLED=0`) for:
+* **Linux (x86_64)**: `linux/amd64`
+* **Linux (ARM64)**: `linux/arm64`
+* **macOS (Apple Silicon)**: `darwin/arm64`
+
+Artifacts are packaged as `.tar.gz` archives with SHA-256 checksums (`checksums.txt`) and attached to the GitHub Release.
+
+### How to Cut a Release
+
+1. **Ensure Working Tree is Clean & Tests Pass:**
+   ```bash
+   cd cli && go test -v ./...
+   ```
+
+2. **Create an Annotated Git Tag:**
+   ```bash
+   git tag -a v0.1.0 -m "Release v0.1.0"
+   ```
+
+3. **Push the Tag to GitHub:**
+   ```bash
+   git push origin v0.1.0
+   ```
+
+4. **Monitor GitHub Actions & Download Release:**
+   - The workflow runs unit tests, injects version metadata (`Version`, `Commit`, `Date`) via `ldflags`, cross-compiles all binaries, packages them, and creates the GitHub Release automatically under `https://github.com/burakberkkeskin/lubelogger-cli/releases`.
+

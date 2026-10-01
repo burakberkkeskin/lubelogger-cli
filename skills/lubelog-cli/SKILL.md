@@ -190,6 +190,27 @@ lubelog note list 3 --json
 
 ---
 
+### 6. `lubelog version` (or `-v`, `--version`)
+Displays CLI version, build timestamp, commit SHA, and Go/OS/Arch metadata.
+
+```bash
+lubelog version --json
+```
+
+**JSON Output Example:**
+```json
+{
+  "version": "v0.1.0",
+  "commit": "b7d530b",
+  "date": "2026-10-01T07:40:09Z",
+  "goVersion": "go1.23.0",
+  "os": "darwin",
+  "arch": "arm64"
+}
+```
+
+---
+
 ## Autonomous Agent Execution Protocols (Blank-Context Guide)
 
 When an AI Agent is asked a question regarding vehicles or maintenance, follow this exact 3-step protocol without inspecting the codebase:
