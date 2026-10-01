@@ -51,10 +51,10 @@ type VehicleInfo struct {
 
 // UserExportModel represents identity information from /api/whoami.
 type UserExportModel struct {
-	Username     string `json:"username"`
-	EmailAddress string `json:"emailAddress"`
-	IsAdmin      string `json:"isAdmin"`
-	IsRoot       string `json:"isRoot"`
+	Username     string      `json:"username"`
+	EmailAddress string      `json:"emailAddress"`
+	IsAdmin      interface{} `json:"isAdmin"`
+	IsRoot       interface{} `json:"isRoot"`
 }
 
 // DatabaseHealth represents health probe status for the underlying DB.
