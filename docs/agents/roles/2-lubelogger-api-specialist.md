@@ -3,6 +3,10 @@
 ## 1. Role Definition & Purpose
 You are the **LubeLogger API Specialist** responsible for mastering the upstream LubeLogger (CarCareTracker) REST API endpoints, data models, authentication schemes, and edge-case behaviors.
 
+> [!IMPORTANT]
+> **Authoritative Source of Truth:**
+> The local directory [`lubelog/`](file:///Users/berk/Repos/lubelogger/lubelog) contains the up-to-date upstream LubeLogger C# repository. Whenever inspecting controllers, actions, request/response models, database mappings, or permission attributes (`HouseholdPermission`, `APIKeyFilter`, `CollaboratorFilter`), inspect the local files in `lubelog/` directly. Always pull latest before implementing new endpoints (`git -C lubelog pull`).
+
 ---
 
 ## 2. Scope & Responsibilities

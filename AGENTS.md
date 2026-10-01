@@ -25,9 +25,19 @@
 *   `skills/`: Agent skill definitions (`skills/lubelog-cli/SKILL.md`) enabling direct tool discovery and invocation by AI agents.
 *   `lubelog/`: Upstream LubeLogger source code clone (retained as local reference, gitignored).
 
-### Agent Discovery & Blank-Context Protocol (Zero Source-Code Reading)
+### Upstream Backend Source of Truth (`lubelog/`)
 
-Incoming agents in a fresh context MUST NOT scan source code. Use the CLI commands via `skills/lubelog-cli/SKILL.md`:
+> [!IMPORTANT]
+> **Authoritative Backend Codebase Location**:
+> The directory [`lubelog/`](file:///Users/berk/Repos/lubelogger/lubelog) inside this repository contains the local git clone of the upstream LubeLogger backend (`https://github.com/hargata/lubelog`).
+>
+> 1. **Local Backend Inspection**: Whenever an agent needs to inspect backend implementations, API controllers, action routes, model bindings, filters, database access layers, or permissions (`HouseholdPermission`, `APIKeyFilter`, `CollaboratorFilter`), the agent **MUST ALWAYS inspect the local files in `lubelog/` directly** (e.g. `lubelog/Controllers/API/`, `lubelog/Models/`, `lubelog/Filter/`, `lubelog/Logic/`).
+> 2. **Keep Up-to-Date**: The `lubelog/` clone is gitignored from the root repository. Agents should ensure it remains updated with upstream `main` (`git -C lubelog pull`) before analyzing new or recently introduced server features.
+> 3. **Zero Remote Guessing**: Never curl or query external web pages for LubeLogger C# source code when the complete, accurate backend code is already indexed and available locally under `lubelog/`.
+
+### Agent Discovery & Blank-Context Protocol (Zero Source-Code Reading for CLI Consumers)
+
+Incoming agents in a fresh context querying or operating on vehicle maintenance MUST NOT scan source code. Use the CLI commands via `skills/lubelog-cli/SKILL.md`:
 
 | User Goal | Autonomous Agent Action | Example Command |
 | :--- | :--- | :--- |
@@ -35,7 +45,13 @@ Incoming agents in a fresh context MUST NOT scan source code. Use the CLI comman
 | **Find vehicle ID** | List vehicles by plate / name | `lubelog vehicle list --json` |
 | **Inspect vehicle summary** | Get odometer, reminder & costs | `lubelog vehicle get <id> --json` |
 | **Fetch service records** | Get maintenance history / last N records | `lubelog service list <id> --limit <n> --json` |
+| **Record service / maintenance**| Add service record with attachment | `lubelog service add <id> --desc "..." --odometer <n> --cost <n> --file <path> --json` |
+| **Fetch fuel logs** | Get fuel history / efficiency | `lubelog fuel list <id> --limit <n> --json` |
+| **Record fuel fill-up** | Add fuel record | `lubelog fuel add <id> --odometer <n> --liters <n> --cost <n> --full --json` |
 | **Fetch notes & documents** | Get expert reports, notes & files | `lubelog note list <id> --json` |
+| **Add vehicle note** | Add note with attachment | `lubelog note add <id> --title "..." --text "..." --file <path> --json` |
+| **Upload document** | Upload file directly to server | `lubelog file upload <path>... --json` |
+| **Download document** | Download attachment by ID / path | `lubelog service download <id> <recId> --output <dir>` |
 
 ---
 
