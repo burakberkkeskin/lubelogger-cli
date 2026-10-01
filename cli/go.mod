@@ -1,0 +1,3 @@
+module github.com/burakberk/lubelogger-cli
+
+go 1.26.2

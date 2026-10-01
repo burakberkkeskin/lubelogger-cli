@@ -31,4 +31,4 @@ Establish the foundation of the LubeLogger CLI (`lubelog`) and agentic workflow.
 - [x] Author Agent Skill definition in `skills/lubelog-cli/SKILL.md`.
 - [x] Add automated unit tests for client and output formatters (`go test ./...`).
 - [x] Build static binary and verify command execution.
-- [ ] Commit all changes with Conventional Commits.
+- [x] Commit all changes with Conventional Commits.
