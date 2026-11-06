@@ -9,13 +9,14 @@ The `lubelog` CLI is an agentic tool designed for fast, programmatic access to v
 
 ## Installation / Binary Location
 
-The binary is compiled from `/Users/berk/Repos/lubelogger/cli` and can be built or executed directly:
+The CLI binary is compiled from `/Users/berk/Repos/lubelogger/cli` and symlinked globally to `~/.local/bin/lubelog`:
 
 ```bash
-# Direct build
-cd /Users/berk/Repos/lubelogger/cli && go build -o bin/lubelog ./cmd/lubelog
+# Global invocation (in system PATH)
+lubelog <command> [options]
 
-# Invocation
+# Direct invocation / build from repository
+cd /Users/berk/Repos/lubelogger/cli && go build -o bin/lubelog ./cmd/lubelog
 /Users/berk/Repos/lubelogger/cli/bin/lubelog <command> [options]
 ```
 

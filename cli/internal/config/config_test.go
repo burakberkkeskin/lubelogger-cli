@@ -7,6 +7,20 @@ import (
 )
 
 func TestLoadConfig_Precedence(t *testing.T) {
+	// Clean ambient environment for the duration of this test
+	origURL := os.Getenv("LUBELOGGER_URL")
+	origKey := os.Getenv("LUBELOGGER_API_KEY")
+	origTimeout := os.Getenv("LUBELOGGER_TIMEOUT")
+	defer func() {
+		_ = os.Setenv("LUBELOGGER_URL", origURL)
+		_ = os.Setenv("LUBELOGGER_API_KEY", origKey)
+		_ = os.Setenv("LUBELOGGER_TIMEOUT", origTimeout)
+	}()
+
+	_ = os.Unsetenv("LUBELOGGER_URL")
+	_ = os.Unsetenv("LUBELOGGER_API_KEY")
+	_ = os.Unsetenv("LUBELOGGER_TIMEOUT")
+
 	// Test Default
 	cfg := LoadConfig("", "", "", "", "", false)
 	if cfg.URL != "http://localhost:5000" {
@@ -17,11 +31,6 @@ func TestLoadConfig_Precedence(t *testing.T) {
 	_ = os.Setenv("LUBELOGGER_URL", "http://env-host:8080")
 	_ = os.Setenv("LUBELOGGER_API_KEY", "env-api-key")
 	_ = os.Setenv("LUBELOGGER_TIMEOUT", "15s")
-	defer func() {
-		_ = os.Unsetenv("LUBELOGGER_URL")
-		_ = os.Unsetenv("LUBELOGGER_API_KEY")
-		_ = os.Unsetenv("LUBELOGGER_TIMEOUT")
-	}()
 
 	cfgEnv := LoadConfig("", "", "", "", "", false)
 	if cfgEnv.URL != "http://env-host:8080" {
