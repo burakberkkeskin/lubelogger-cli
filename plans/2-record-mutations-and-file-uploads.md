@@ -12,7 +12,7 @@ LubeLogger REST API **fully supports** document uploads and record mutations out
    - `POST /api/documents/upload`
    - Content-Type: `multipart/form-data` with form field `documents` (one or multiple files).
    - Behavior: Writes files into LubeLogger's `data/documents/` storage with UUID-based names and returns `UploadedFiles[]` (`name`, `location`).
-   - *Live Verification:* Verified live on `https://lubelogger.burakberk.dev`. Response: `[{"name":"...","location":"/documents/<UUID>.<ext>","isPending":false}]`.
+   - *Live Verification:* Verified live on `https://lubelogger.example.com`. Response: `[{"name":"...","location":"/documents/<UUID>.<ext>","isPending":false}]`.
 
 2. **Service Record Creation:**
    - `POST /api/vehicle/servicerecords/add`
@@ -162,7 +162,7 @@ When `--json` is supplied, all `add` commands return a deterministic envelope:
   - Multi-value `--file` flag accumulator.
   - Sane defaults (auto-date to today, positive validations).
 - [ ] **Milestone 4: Verification & Live Testing**
-  - Test live creation and document attachment against homelab instance `https://lubelogger.burakberk.dev`.
+  - Test live creation and document attachment against homelab instance `https://lubelogger.example.com`.
   - Confirm newly created record is immediately queryable via `lubelog service list 3` and file downloadable via `lubelog service download 3 <newId>`.
 - [ ] **Milestone 5: Documentation & Release**
   - Update `README.md` and `skills/lubelog-cli/SKILL.md`.

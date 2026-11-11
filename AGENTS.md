@@ -10,7 +10,7 @@
 **LubeLogger CLI (`lubelog`)** is an ultra-fast, minimalist, **Agent-First** command-line interface and tool integration layer for the LubeLogger vehicle service and maintenance tracking platform.
 
 *   **Primary User Persona:** AI Agents (Antigravity, Claude Code, Cursor, etc.) interacting with LubeLogger programmatically (functioning as a deterministic, lightweight alternative to MCP servers), alongside human sysadmins running terminal queries.
-*   **Target Backend:** LubeLogger REST API (e.g. `https://lubelogger.burakberk.dev` or local `http://localhost:5000`).
+*   **Target Backend:** LubeLogger REST API (e.g. `https://lubelogger.example.com` or local `http://localhost:5000`).
 *   **Core Invariants:**
     1.  **Agent-First Ergonomics:** Non-interactive execution, deterministic JSON payloads, and machine-readable exit codes.
     2.  **Sub-10ms Latency & Zero Dependencies:** Compiled single static Go binary (`lubelog`) requiring no external runtime daemons, interpreters, or virtualenvs.

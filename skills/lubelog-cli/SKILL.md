@@ -134,9 +134,9 @@ lubelog service list 3 --limit 3 --json
     "vehicleId": 3,
     "date": "2026-09-19",
     "odometer": 69779,
-    "description": "Akü değişimi",
+    "description": "Battery replacement",
     "cost": 4000,
-    "notes": "Üstündeki orijinal akü, Tudor 60A akü ile değişti.",
+    "notes": "Replaced OEM battery with Tudor 60Ah battery.",
     "tags": ""
   },
   {
@@ -144,9 +144,9 @@ lubelog service list 3 --limit 3 --json
     "vehicleId": 3,
     "date": "2026-09-01",
     "odometer": 69528,
-    "description": "70 bin ağır bakımı",
+    "description": "Major maintenance",
     "cost": 16000,
-    "notes": "- Triger kayışı (orjinal)\n- V kayışı (orijinal)\n- Devirdaim (orijinal)\n- Termostat\n- Gergi (Orijinal)\n- Antifriz\n- Saf su",
+    "notes": "- Timing belt\n- V belt\n- Water pump\n- Thermostat\n- Tensioner\n- Coolant",
     "tags": ""
   },
   {
@@ -154,7 +154,7 @@ lubelog service list 3 --limit 3 --json
     "vehicleId": 3,
     "date": "2026-04-22",
     "odometer": 64500,
-    "description": "Periyodik bakım: Yağ, hava filtre, yağ filtre, polen filtre",
+    "description": "Scheduled service: Oil, air filter, oil filter, cabin filter",
     "cost": 5000,
     "tags": ""
   }
@@ -176,12 +176,12 @@ lubelog note list 3 --json
   {
     "id": 1,
     "vehicleId": 3,
-    "description": "Vavacars Tarcanlar Ekspertiz",
-    "noteText": "Aracın Vavacars'dan satın alınırkenki 6.000 KM Tarcanlar ekspertiz raporu.",
+    "description": "Pre-purchase inspection",
+    "noteText": "Pre-purchase vehicle condition and inspection report.",
     "pinned": false,
     "files": [
       {
-        "name": "tarcanlar-ekspertiz.pdf",
+        "name": "inspection-report.pdf",
         "location": "/documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf"
       }
     ]
@@ -245,10 +245,10 @@ lubelog service add <vehicleId> \
   "date": "2026-10-01",
   "odometer": "70500",
   "cost": "4500",
-  "description": "Periyodik Bakım",
+  "description": "Scheduled Service",
   "files": [
     {
-      "name": "fatura.pdf",
+      "name": "invoice.pdf",
       "location": "/documents/3f2d9885-a361-4216-bdba-686bb814ac6b.pdf"
     }
   ]
@@ -293,7 +293,7 @@ lubelog file upload <path>... --json
 ```json
 [
   {
-    "name": "fatura.pdf",
+    "name": "invoice.pdf",
     "location": "/documents/3f2d9885-a361-4216-bdba-686bb814ac6b.pdf"
   }
 ]
@@ -315,16 +315,16 @@ lubelog fuel download <vehicleId> <recordId> [--output <dir>] --json
 lubelog note download <vehicleId> <noteId> [--output <dir>] --json
 
 # Direct download by server location / URL
-lubelog file download /documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf --output ./ekspertiz.pdf --json
+lubelog file download /documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf --output ./inspection.pdf --json
 ```
 
 **JSON Output Example:**
 ```json
 [
   {
-    "name": "tarcanlar-ekspertiz.pdf",
+    "name": "inspection-report.pdf",
     "location": "/documents/7a22907b-03bb-4672-ace8-848607bc3d28.pdf",
-    "savedTo": "./downloads/tarcanlar-ekspertiz.pdf",
+    "savedTo": "./downloads/inspection-report.pdf",
     "bytes": 10674297,
     "contentType": "application/pdf"
   }

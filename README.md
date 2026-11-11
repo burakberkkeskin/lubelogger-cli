@@ -59,7 +59,7 @@ make build   # Builds cli/bin/lubelog embedding current git tag and commit
 
 ### 2. Configure Environment
 ```bash
-export LUBELOGGER_URL="https://lubelogger.burakberk.dev"  # or http://localhost:5000
+export LUBELOGGER_URL="https://lubelogger.example.com"  # or http://localhost:5000
 export LUBELOGGER_API_KEY="<YOUR_API_KEY>"
 ```
 
